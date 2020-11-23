@@ -17,6 +17,89 @@ from torch.nn import CrossEntropyLoss, Dropout, Softmax, Linear, Conv2d, LayerNo
 from torch.nn.modules.utils import _pair
 from scipy import ndimage
 
+
+import ml_collections
+
+
+
+def get_testing():
+    """Returns a minimal configuration for testing."""
+    config = ml_collections.ConfigDict()
+    config.patches = ml_collections.ConfigDict({'size': (16, 16)})
+    config.hidden_size = 1
+    config.transformer = ml_collections.ConfigDict()
+    config.transformer.mlp_dim = 1
+    config.transformer.num_heads = 1
+    config.transformer.num_layers = 1
+    config.transformer.attention_dropout_rate = 0.0
+    config.transformer.dropout_rate = 0.1
+    config.classifier = 'token'
+    config.representation_size = None
+    return config
+
+
+def get_b16_config():
+    """Returns the ViT-B/16 configuration."""
+    config = ml_collections.ConfigDict()
+    config.patches = ml_collections.ConfigDict({'size': (16, 16)})
+    config.hidden_size = 768
+    config.transformer = ml_collections.ConfigDict()
+    config.transformer.mlp_dim = 3072
+    config.transformer.num_heads = 12
+    config.transformer.num_layers = 12
+    config.transformer.attention_dropout_rate = 0.0
+    config.transformer.dropout_rate = 0.1
+    config.classifier = 'token'
+    config.representation_size = None
+    return config
+
+
+def get_b32_config():
+    """Returns the ViT-B/32 configuration."""
+    config = get_b16_config()
+    config.patches.size = (32, 32)
+    return config
+
+
+def get_l16_config():
+    """Returns the ViT-L/16 configuration."""
+    config = ml_collections.ConfigDict()
+    config.patches = ml_collections.ConfigDict({'size': (16, 16)})
+    config.hidden_size = 1024
+    config.transformer = ml_collections.ConfigDict()
+    config.transformer.mlp_dim = 4096
+    config.transformer.num_heads = 16
+    config.transformer.num_layers = 24
+    config.transformer.attention_dropout_rate = 0.0
+    config.transformer.dropout_rate = 0.1
+    config.classifier = 'token'
+    config.representation_size = None
+    return config
+
+
+def get_l32_config():
+    """Returns the ViT-L/32 configuration."""
+    config = get_l16_config()
+    config.patches.size = (32, 32)
+    return config
+
+
+def get_h14_config():
+    """Returns the ViT-L/16 configuration."""
+    config = ml_collections.ConfigDict()
+    config.patches = ml_collections.ConfigDict({'size': (14, 14)})
+    config.hidden_size = 1280
+    config.transformer = ml_collections.ConfigDict()
+    config.transformer.mlp_dim = 5120
+    config.transformer.num_heads = 16
+    config.transformer.num_layers = 32
+    config.transformer.attention_dropout_rate = 0.0
+    config.transformer.dropout_rate = 0.1
+    config.classifier = 'token'
+    config.representation_size = None
+    return config
+
+
 logger = logging.getLogger(__name__)
 
 
@@ -238,31 +321,30 @@ class Transformer(nn.Module):
         encoded, attn_weights = self.encoder(embedding_output)
         return encoded, attn_weights
 
-
 class VisionTransformer(nn.Module):
-    def __init__(self, config, img_size=224, num_classes=21843, zero_head=False, vis=False):
+    def __init__(self, version, pretrained, num_classes=1000, img_size=224, include_top=True, vis=False):
         super(VisionTransformer, self).__init__()
         self.num_classes = num_classes
-        self.zero_head = zero_head
-        self.classifier = config.classifier
+        self.include_top = include_top
+        self.classifier = CONFIGS[version].classifier
+        self.feature_dim = CONFIGS[version].hidden_size
+        self.transformer = Transformer(CONFIGS[version], img_size, vis)
+        self.head = Linear(CONFIGS[version].hidden_size, num_classes)
 
-        self.transformer = Transformer(config, img_size, vis)
-        self.head = Linear(config.hidden_size, num_classes)
-
+        if (pretrained is not None):
+          self.load_from(np.load(pretrained)) 
+    
     def forward(self, x, labels=None):
         x, attn_weights = self.transformer(x)
-        logits = self.head(x[:, 0])
-
-        if labels is not None:
-            loss_fct = CrossEntropyLoss()
-            loss = loss_fct(logits.view(-1, self.num_classes), labels.view(-1))
-            return loss
-        else:
-            return logits, attn_weights
-
+       # print(x.shape, x[:,0].shape)
+        #x = self.extractor._avg_pooling(x)
+        #x = x.view(x.size(0), -1)
+        
+        return x[:,0]#, attn_weights
+      
     def load_from(self, weights):
         with torch.no_grad():
-            if self.zero_head:
+            if not self.include_top:
                 nn.init.zeros_(self.head.weight)
                 nn.init.zeros_(self.head.bias)
             else:
@@ -279,6 +361,7 @@ class VisionTransformer(nn.Module):
             posemb_new = self.transformer.embeddings.position_embeddings
             if posemb.size() == posemb_new.size():
                 self.transformer.embeddings.position_embeddings.copy_(posemb)
+                print("Hello")
             else:
                 logger.info("load_pretrained: resized variant: %s to %s" % (posemb.size(), posemb_new.size()))
                 ntok_new = posemb_new.size(1)
@@ -304,7 +387,6 @@ class VisionTransformer(nn.Module):
                 for uname, unit in block.named_children():
                     unit.load_from(weights, n_block=uname)
 
-import ml_collections
 
 CONFIGS = {
     'ViT-B_16': get_b16_config(),
@@ -316,81 +398,6 @@ CONFIGS = {
 }
 
 
-
-
-def get_testing():
-    """Returns a minimal configuration for testing."""
-    config = ml_collections.ConfigDict()
-    config.patches = ml_collections.ConfigDict({'size': (16, 16)})
-    config.hidden_size = 1
-    config.transformer = ml_collections.ConfigDict()
-    config.transformer.mlp_dim = 1
-    config.transformer.num_heads = 1
-    config.transformer.num_layers = 1
-    config.transformer.attention_dropout_rate = 0.0
-    config.transformer.dropout_rate = 0.1
-    config.classifier = 'token'
-    config.representation_size = None
-    return config
-
-
-def get_b16_config():
-    """Returns the ViT-B/16 configuration."""
-    config = ml_collections.ConfigDict()
-    config.patches = ml_collections.ConfigDict({'size': (16, 16)})
-    config.hidden_size = 768
-    config.transformer = ml_collections.ConfigDict()
-    config.transformer.mlp_dim = 3072
-    config.transformer.num_heads = 12
-    config.transformer.num_layers = 12
-    config.transformer.attention_dropout_rate = 0.0
-    config.transformer.dropout_rate = 0.1
-    config.classifier = 'token'
-    config.representation_size = None
-    return config
-
-
-def get_b32_config():
-    """Returns the ViT-B/32 configuration."""
-    config = get_b16_config()
-    config.patches.size = (32, 32)
-    return config
-
-
-def get_l16_config():
-    """Returns the ViT-L/16 configuration."""
-    config = ml_collections.ConfigDict()
-    config.patches = ml_collections.ConfigDict({'size': (16, 16)})
-    config.hidden_size = 1024
-    config.transformer = ml_collections.ConfigDict()
-    config.transformer.mlp_dim = 4096
-    config.transformer.num_heads = 16
-    config.transformer.num_layers = 24
-    config.transformer.attention_dropout_rate = 0.0
-    config.transformer.dropout_rate = 0.1
-    config.classifier = 'token'
-    config.representation_size = None
-    return config
-
-
-def get_l32_config():
-    """Returns the ViT-L/32 configuration."""
-    config = get_l16_config()
-    config.patches.size = (32, 32)
-    return config
-
-
-def get_h14_config():
-    """Returns the ViT-L/16 configuration."""
-    config = ml_collections.ConfigDict()
-    config.patches = ml_collections.ConfigDict({'size': (14, 14)})
-    config.hidden_size = 1280
-    config.transformer = ml_collections.ConfigDict()
-    config.transformer.mlp_dim = 5120
-    config.transformer.num_heads = 16
-    config.transformer.num_layers = 32
-    config.transformer.attention_dropout_rate = 0.0
-    config.transformer.dropout_rate = 0.1
-    config.classifier = 'token'
-    config.representation_size = None
-    return config
+if __name__ == "__main__":
+    model = VisionTransformer(version="ViT-B_16", pretrained='ViT-B_16-224.npz', num_classes=10, include_top=False, vis=True)
+    # print(model)
