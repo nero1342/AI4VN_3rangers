@@ -44,7 +44,7 @@ for cls_id, cls_list in d.items():
 
 # Save split
 for split, classes in splits.items():
-    out = [['filename', 'category']]
+    out = [['filename', 'label']]
     out.extend([
         [fn, cl]
         for cl, fns in classes.items()
