@@ -17,9 +17,6 @@ from torch.nn import CrossEntropyLoss, Dropout, Softmax, Linear, Conv2d, LayerNo
 from torch.nn.modules.utils import _pair
 from scipy import ndimage
 
-import .configs as configs
-
-
 logger = logging.getLogger(__name__)
 
 
