@@ -81,7 +81,7 @@ conff = []
 filename = []
 df = dataset.df
 for a, b in df.iterrows():
-    filename.append(b['filename'][b['filename'].find('.') - 5:])
+    filename.append(b['filename'][b['filename'].rfind('/') + 1:])
 
 probs_ls = [] 
   
@@ -94,17 +94,26 @@ with torch.no_grad():
         probs = F.softmax(logits, dim=1)
         confs, preds = torch.max(probs, dim=1)
         for lbl, conf, prob in zip(preds, confs, probs):
-            label.append(int(lbl) + 1)
+            label.append(int(lbl))
             conff.append(conf.cpu().numpy())
             probs_ls.append(prob.cpu().numpy())
-        # break
+        #break
 with open(config['id'] + '.csv', "w") as f:
-  print("filename,label,conf,0, 1,2,3,4,5,6,7",file = f)
+  print("filename,label,conf,0,1,2,3,4,5,6,7,8",file = f)
   for i in range(len(label)):
     print(filename[i], label[i], conff[i], end = ',', sep = ',', file = f)
     for x in probs_ls[i]:
       print('{:05f}'.format(x), file = f, end = ',')
     print(file = f)
+  f.close()  
+
+with open(config['id'] + '.txt', "w") as f:
+  for i in range(len(label)):
+    lbl = label[i] if conff[i] >= config['threshold'] else 0
+    print(filename[i], lbl, sep = '\t', file = f)
+    # for x in probs_ls[i]:
+    #   print('{:05f}'.format(x), file = f, end = ',')
+    # print(file = f)
   f.close()  
 # df.to_csv(config['id'] + '.csv', index = False)
     #csv.writer(open(config['id'] + '.csv', 'w')).writerows(out)
