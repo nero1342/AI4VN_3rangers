@@ -29,7 +29,7 @@ def train(config):
     pretrained_path = config["pretrained"]
 
     pretrained = None
-    if (pretrained_path != None):
+    if (str(pretrained_path) != 'None'):
         pretrained = torch.load(pretrained_path, map_location=dev_id)
         for item in ["model"]:
             config[item] = pretrained["config"][item]

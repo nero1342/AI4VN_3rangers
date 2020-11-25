@@ -81,7 +81,7 @@ conff = []
 filename = []
 df = dataset.df
 for a, b in df.iterrows():
-    filename.append(b['filename'][-9:])
+    filename.append(b['filename'][b['filename'].find('.') - 5:])
 
 probs_ls = [] 
   
@@ -99,7 +99,7 @@ with torch.no_grad():
             probs_ls.append(prob.cpu().numpy())
         # break
 with open(config['id'] + '.csv', "w") as f:
-  print("filename,label,conf,1,2,3,4,5,6,7",file = f)
+  print("filename,label,conf,0, 1,2,3,4,5,6,7",file = f)
   for i in range(len(label)):
     print(filename[i], label[i], conff[i], end = ',', sep = ',', file = f)
     for x in probs_ls[i]:
