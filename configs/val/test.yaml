@@ -14,4 +14,5 @@ model:
 dataset:
   csv: test.csv        
   batch_size: 32
+  num_workers: 8
     

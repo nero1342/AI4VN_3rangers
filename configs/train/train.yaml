@@ -45,6 +45,7 @@ dataset:
             args:
                 shuffle: True
                 batch_size: 24
+                num_workers: 8
     
     val:
         name: ImageFolderDataset
@@ -56,8 +57,10 @@ dataset:
             args:
                 shuffle: False
                 batch_size: 24
+                num_workers: 8
         
 trainer:
     nepochs: 100
     val_step: 1
     log_step: 1
+    run_dir: runs
