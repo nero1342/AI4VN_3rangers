@@ -46,8 +46,8 @@ class AverageAccuracy():
 
     def update(self, value):
         freq, freq_tar = value 
-        self.correct += freq.cpu().numpy()[:8]
-        self.sample_size += freq_tar.cpu().numpy()[:8]
+        self.correct += freq.cpu().numpy()[:self.nclasses]
+        self.sample_size += freq_tar.cpu().numpy()[:self.nclasses]
 
     def reset(self):
         self.correct = np.zeros(self.nclasses + 1)
@@ -55,7 +55,7 @@ class AverageAccuracy():
 
 
     def value(self):
-        return self.correct / self.sample_size
+        return np.mean(self.correct / self.sample_size)
 
     def summary(self):
-        print(f'Accuracy: {self.value()}')
+        print(f'Accuracy: {self.value()}\n {self.correct}\n {self.sample_size}')
