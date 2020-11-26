@@ -37,7 +37,7 @@ class AverageAccuracy():
         pred = torch.argmax(output, dim=1)
         correct = (pred == target).sum()
         sample_size = output.size(0)
-
+pass   
         pred[pred != target] = 0
         
         freq = torch.bincount(pred, minlength=9)
@@ -50,8 +50,8 @@ class AverageAccuracy():
         self.sample_size += freq_tar.cpu().numpy()[:self.nclasses]
 
     def reset(self):
-        self.correct = np.zeros(self.nclasses + 1)
-        self.sample_size = np.zeros(self.nclasses + 1)
+        self.correct = np.zeros(self.nclasses)
+        self.sample_size = np.zeros(self.nclasses)
 
 
     def value(self):

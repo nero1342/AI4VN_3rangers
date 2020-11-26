@@ -6,13 +6,16 @@ model:
     args:
         nclasses: 9
         extractor_cfg:
-            name: EfficientNetExtractor
+            name: VisionTransformer
             args:
-                version: 0
+                pretrained: ViT-B_16-224.npz
+                version: ViT-B_16
 
 optimizer:
-    name: Adam
+    name: SGD
     args:
+        lr: 0.01
+        momentum: 0.9
         # <argument keyword>: <argument value>
         # ... more args
 loss:
@@ -21,7 +24,7 @@ loss:
         #<argument keyword>: <argument value>
         # ... more args
 metric:
-    - name: Accuracy
+    - name: AverageAccuracy
       args:
           #<argument keyword>: <argument value>
           # ... more args
