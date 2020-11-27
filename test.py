@@ -111,9 +111,4 @@ with open(config['id'] + '.txt', "w") as f:
   for i in range(len(label)):
     lbl = label[i] if conff[i] >= config['threshold'] else 0
     print(filename[i], lbl, sep = '\t', file = f)
-    # for x in probs_ls[i]:
-    #   print('{:05f}'.format(x), file = f, end = ',')
-    # print(file = f)
   f.close()  
-# df.to_csv(config['id'] + '.csv', index = False)
-    #csv.writer(open(config['id'] + '.csv', 'w')).writerows(out)
